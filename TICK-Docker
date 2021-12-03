@@ -1,0 +1,96 @@
+Updated config.json file
+ {
+      "experimental": "enabled"
+}
+setting the DOCKER_CLI_EXPERIMENTAL environment variable
+
+export DOCKER_CLI_EXPERIMENTAL=enabled
+
+$ docker app version
+
+$ docker app
+
+$ tree .
+
+Next we created the Docker Application, named tick:
+
+$ docker app init tick --compose-file tick.yml --description "tick stack"
+
+$ tree .
+.
+├── telegraf.conf
+├── tick.dockerapp
+│   ├── docker-compose.yml
+│   ├── metadata.yml
+│   └── parameters.yml
+└── tick.yml
+
+1 directory, 5 files
+– docker-compose.yml is the copy of the tick.yml file- metadata.yml defines metadata and additional parameters
+
+$ cat tick.dockerapp/metadata.yml
+
+parameter file update:
+
+– parameters.yml defines some default ports for both Telegraf and Chronograf services
+
+// parameters.yml
+ports:
+  telegraf: 8186
+  chronograf: 8888
+– dev.yml specifies values for the development environment
+
+// dev.yml
+ports:
+  telegraf: 8000
+  chronograf: 8001
+– prod.yml specifies values for the production environment
+
+// prod.yml
+ports:
+  telegraf: 9000
+  chronograf: 9001
+modified the docker-compose.yml file to add some placeholders:
+
+$ cat tick.dockerapp/docker-compose.yml
+
+$ docker app render tick.dockerapp/
+
+$ docker app render tick.dockerapp --parameters-file tick.dockerapp/dev.yml
+
+$ docker app inspect tick
+tick 0.1.0
+
+$ docker context use default
+
+$ docker app install tick.dockerapp --name tick --parameters-file tick.dockerapp/prod.yml
+Creating network tick_default
+Creating config tick_telegraf-conf
+Creating service tick_telegraf
+Creating service tick_influxdb
+Creating service tick_chronograf
+Creating service tick_kapacitor
+
+$ docker app list
+
+$ docker service ls
+ID               NAME             MODE           REPLICAS    IMAGE               PORTS
+75onunrvoxgt     tick_chronograf  replicated     1/1         chronograf:latest   *:9001->8888/tcp
+vj1ttws2mw1u     tick_influxdb    replicated     1/1         influxdb:latest
+q4brz1i45cai     tick_kapacitor   replicated     1/1         kapacitor:latest
+i6kvr37ycnn5     tick_telegraf    replicated     1/1         telegraf:latest     *:9000->8186/tcp
+
+$ docker app push tick --tag lucj/tick:0.1.0
+Successfully pushed bundle to docker.io/lucj/tick:0.1.0. Digest is sha256:7a71d2bfb5588be0cb74cd76cc46575b58c433da1fa05b4eeccd5288b4b75bac.
+It then appears next to the Docker images on the account it was pushed to:
+
+$ docker app pull lucj/tick:0.1.0
+
+$ docker app uninstall tick
+Removing service tick_chronograf
+Removing service tick_influxdb
+Removing service tick_kapacitor
+Removing service tick_telegraf
+Removing config tick_telegraf-conf
+Removing network tick_default
+Application "tick" uninstalled on context "default"
